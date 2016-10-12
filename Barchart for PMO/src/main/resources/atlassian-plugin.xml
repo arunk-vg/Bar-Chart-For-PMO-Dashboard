@@ -1,0 +1,27 @@
+<atlassian-plugin key="${project.groupId}.${project.artifactId}"
+	name="${project.name}" plugins-version="2">
+	<plugin-info>
+		<description>${project.description}</description>
+		<version>${project.version}</version>
+		<vendor name="${project.organization.name}" url="${project.organization.url}" />
+        <param name="plugin-icon">images/jbcp-16.png</param>
+        <param name="plugin-logo">images/jbcp-144.png</param>
+        <param name="vendor-icon">images/tngVendorIcon.png</param>
+        <param name="vendor-logo">images/tngVendorLogo.png</param>
+	</plugin-info>
+
+  	<gadget key="barchart"
+    	location="com/tngtech/jira/plugins/gadget/barchart-gadget.xml"/>
+    	
+    <rest key="rest-resources" path="/barcharts" version="1.0">
+        <description>Provides the REST API for the gadget</description> 
+    </rest>
+    
+    <resource type="i18n" location="i18n/i18n" name="i18n" />
+	<resource type="download" name="thumbnail.png" location="images/thumbnail.png"/>
+
+	<component key='jirautils' class="com.tngtech.jira.plugins.utils.JiraUtils" name="Utility Service">
+		<interface>com.tngtech.jira.plugins.utils.JiraUtils</interface>
+	</component>
+
+</atlassian-plugin>

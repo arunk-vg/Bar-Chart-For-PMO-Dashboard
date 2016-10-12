@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Module>
+	<ModulePrefs
+    	title="__MSG_gadget.barchart.title__"
+    	author="TNG Technology Consulting GmbH"
+        description="__MSG_gadget.barchart.description__"
+		thumbnail='#staticResourceUrl("com.tngtech.gadgets.jira-barchart-gadget-plugin:barchart", "thumbnail.png")' >
+
+        <Require feature="dynamic-height"/>
+        <Require feature="oauthpopup"/>
+        <Require feature="setprefs"/>
+        <Require feature="settitle"/>
+        <Require feature="views"/>
+        <Optional feature="atlassian.util" />
+    	
+    	<Optional feature="gadget-directory"> 
+  			<Param name="categories"> 
+    			JIRA 
+    			Charts 
+  			</Param> 
+		</Optional>
+		
+        #oauth
+        
+        #supportedLocales("gadget.common,gadget.barchart")
+        #supportLocales
+
+  	</ModulePrefs>
+  	
+  	<UserPref name="isConfigured" datatype="hidden" default_value="false" />
+    <UserPref name="projectOrFilterId" datatype="hidden"/>
+    <UserPref name="groupField" datatype="hidden"/>
+    <UserPref name="axisField" datatype="hidden"/>
+    <UserPref name="plotWidth" datatype="hidden" default_value="80"/>
+    <UserPref name="showTable" datatype="hidden" default_value="show"/>
+    <UserPref name="tableFontSize" datatype="hidden" default_value="10"/>
+    <UserPref name="refresh" datatype="hidden" default_value="false" />
+
+  	<Content type="html"><![CDATA[
+  	
+    	#requireResource("com.atlassian.gadgets.publisher:ajs-gadgets")
+        #requireResource("com.atlassian.jira.gadgets:jira-global")
+        #requireResource("com.atlassian.jira.gadgets:autocomplete")
+		#includeResources()
+		
+		<style type="text/css">
+            .field-group {
+                margin-top: 10px;
+            }
+            #data {
+            	margin-left: 5px;
+            	margin-right: 5px;
+                overflow: auto;
+            }
+            #data-table td {
+                padding: 3px;
+            }
+            #data-table .data-table-entry {
+            	text-align: center;
+            }
+            #data-table .data-table-label {
+            }
+            #data-table .data-table-sum {
+            	font-weight: bold;
+            }
+        </style>
+		
+		<script type="text/javascript">
+		(function () {
+			var gadget = AJS.Gadget({
+				baseUrl: "__ATLASSIAN_BASE_URL__",
+				useOauth: "__ATLASSIAN_BASE_URL__/rest/gadget/1.0/currentUser",
+                config: {
+                    descriptor: function(args)
+                    {
+                        var gadget = this;
+                        
+                        gadgets.window.setTitle("__MSG_gadget.barchart.configtitle__");
+
+                        var projectOrFilterPicker = AJS.gadget.fields.projectOrFilterPicker(gadget, "projectOrFilterId", args.options);
+
+                        return {
+							action: "__ATLASSIAN_BASE_URL__/rest/barcharts/1.0/BarChartValidation/validate",
+                            fields: [
+                                projectOrFilterPicker,
+                                {
+                                	userpref: "axisField",
+                                    label: "__MSG_gadget.barchart.config.xaxis.label__",
+                                    description: "__MSG_gadget.barchart.config.xaxis.description__",
+                                    type: "select",
+                                    selected: this.getPref("axisField"),
+                                    options: args.axisField.fieldNames
+                                },
+                                {
+                                	userpref: "groupField",
+                                    label: "__MSG_gadget.barchart.config.groupfield.label__",
+                                    description: "__MSG_gadget.barchart.config.groupfield.description__",
+                                    type: "select",
+                                    selected: this.getPref("groupField"),
+                                    options: args.groupField.fieldNames
+                                },
+								{
+                                	userpref: "plotWidth",
+                                    label: "__MSG_gadget.barchart.config.plotwidth.label__",
+                                    description: "__MSG_gadget.barchart.config.plotwidth.description__",
+                                    type: "custom",
+									template: function () {
+										return '<input type="number" class="number text" id="plotWidth" name="plotWidth" value="' +
+												gadget.getPref("plotWidth") + '" >';
+									}
+								},
+                                // Checkbox removed due to problems with internet explorer. Currently use following select field instead
+								{
+                                	userpref: "showTable",
+                                    label: "__MSG_gadget.barchart.config.showtable.label__",
+                                    description: "__MSG_gadget.barchart.config.showtable.description__",
+                                    type: "select",
+                                    selected: this.getPref("showTable"),
+                                    options: [{"value" : "show", "label" : "__MSG_gadget.barchart.config.showtable.yes__"}, {"value" : "", "label" : "__MSG_gadget.barchart.config.showtable.no__"}]
+								},
+								{
+                                	userpref: "tableFontSize",
+                                    label: "__MSG_gadget.barchart.config.tablefontsize.label__",
+                                    description: "__MSG_gadget.barchart.config.tablefontsize.description__",
+									type: "custom",
+									template: function () {
+										return '<input type="number" class="number text" id="tableFontSize" name="tableFontSize" value="' +
+												gadget.getPref("tableFontSize") + '" >';
+									}
+								},
+                                AJS.gadget.fields.nowConfigured()
+                            ]
+                        };
+                    },
+           		 	 args: [{
+            		 	key: "groupField",
+            		    ajaxOptions: function () {
+             		    	return {
+                		        url: "__ATLASSIAN_BASE_URL__/rest/barcharts/1.0/BarChartConfiguration/LookupCustomAndCommonFields"
+              		        };
+             		   	}
+           		 	 },
+           		 	 {
+            		 	key: "axisField",
+            		    ajaxOptions: function () {
+             		    	return {
+                		        url: "__ATLASSIAN_BASE_URL__/rest/barcharts/1.0/BarChartConfiguration/LookupCustomAndCommonFieldsWithoutNothing"
+              		        };
+             		   	}
+           		 	 }]
+                },
+				view: {
+					enableReload: true,
+                    onResizeReload: true,
+         		    template: function(args) {
+         		    
+            		    var gadget = this;
+                        gadget.projectOrFilterName = args.chart.projectOrFilterName;
+            		    gadgets.window.setTitle("__MSG_gadget.barchart.title__ " + args.chart.projectOrFilterName);
+             		    
+             		    var content = "<div align=\"center\"><img src=\"__ATLASSIAN_BASE_URL__/charts?filename=" + args.chart.url + "\"></div><br>"
+             		    content += "<div align=\"center\">" + args.chart.countIssues + " __MSG_gadget.barchart.view.issues.total__ &nbsp;&nbsp;";
+             		    content += "__MSG_gadget.barchart.view.group.by__ &nbsp; <b>" + args.chart.groupBy + "</b><br><br>";
+             		    
+             		    if (gadget.getPref("showTable") == "show") {
+             		    	content += "<div id=\"data\"><table id=\"data-table\" border=\"1\">";
+             		    	for (var i = 0; i < args.chart.data.length; i++) {
+             		    		//first row
+             		    		if (i == 0)
+             		    			content += "<tr class=\"data-table-label\"><td></td>";
+            		    		//last row
+             		    		else if (i == args.chart.data.length-1)
+             		    			content += "<tr><td class=\"data-table-sum\">__MSG_gadget.barchart.view.table.sum__</td>";
+             		    		//another row
+             		    		else
+             		    			content += "<tr><td class=\"data-table-label\">" + args.chart.groupValues[i-1] + "</td>";
+             		    		for (var j = 0; j < args.chart.data[i].length; j++) {
+             		    			//last column or last row
+             		    			if (j == args.chart.data[i].length-1 || i == args.chart.data.length-1)
+             		    				content += "<td class=\"data-table-entry data-table-sum\">"
+             		    			//another column
+            		    			else
+             		    				content += "<td class=\"data-table-entry\">"
+             		    			content += args.chart.data[i][j] + "</td>";
+             		    		}
+             		    		content += "</tr>";
+             		    	}
+             		    	content += "</table></div>";
+             		    }
+             		    
+             		    content += "</div>";
+             		    
+             		    var fontSize = gadget.getPref("tableFontSize");
+             		    if (! fontSize || !parseFloat(fontSize) || fontSize < 5)
+             		    	fontSize = 10;
+             		    var increasedFontSize = parseFloat(fontSize)+0.5;
+             		    content += "<style type=\"text/css\"> #data-table td { font-size: " + fontSize + "px; } ";
+             		    content += "#data-table .data-table-sum { font-size: " + increasedFontSize + "px; } </style>";
+             		    
+             	 	    gadget.getView().html(content);
+           			 },
+           		 	 args: [{
+            		 	key: "chart",
+            		    ajaxOptions: function () {
+                            var width = Math.round(gadgets.window.getViewportDimensions().width * 0.9);
+                            if (width < 100)
+                                width = 100;
+                            var percentage = this.getPref("plotWidth");
+                            if (! percentage || !parseFloat(percentage) )
+                            	percentage = 80;
+                            var height = Math.round(width*percentage/100);
+                            if (height < 80)
+                            	height = 150;
+                            
+             		    	return {
+                		        url: "__ATLASSIAN_BASE_URL__/rest/barcharts/1.0/BarChart/GenerateChart",
+                                data:  {
+                                	projectOrFilterId : gadgets.util.unescapeString(this.getPref("projectOrFilterId")),
+                                	axisField : gadgets.util.unescapeString(this.getPref("axisField")),
+                                	groupField : gadgets.util.unescapeString(this.getPref("groupField")),
+                                	width : width,
+                                	height : height
+                                }
+              		        };
+             		   	}
+           		 	 }
+           		 	 ]
+       		 	}
+   		 	});
+   		 	gadgets.window.adjustHeight();
+		})();
+        </script>
+  
+  	]]></Content>
+</Module>
