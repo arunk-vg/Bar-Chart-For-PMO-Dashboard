@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+  <name>jira-barchart-gadget-plugin</name>
+  <comment>This plugin contains a gadget displaying a generic bar chart. The bar chart is fully configurable: The user can specify the chart&apos;s size and domain axis. Furthermore one can set an option to create a stacked bar chart grouping by another field. The gadget also contains the option to display a customizable table showing the chart&apos;s data. NO_M2ECLIPSE_SUPPORT: Project files created with the maven-eclipse-plugin are not supported in M2Eclipse.</comment>
+  <projects/>
+  <buildSpec>
+    <buildCommand>
+      <name>org.eclipse.jdt.core.javabuilder</name>
+    </buildCommand>
+  </buildSpec>
+  <natures>
+    <nature>org.eclipse.jdt.core.javanature</nature>
+  </natures>
+</projectDescription>
