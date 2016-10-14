@@ -13,6 +13,7 @@ import javax.ws.rs.core.Response;
 
 import com.atlassian.plugins.rest.common.security.AnonymousAllowed;
 import com.google.common.annotations.VisibleForTesting;
+
 import org.jfree.data.category.CategoryDataset;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.util.Log;
@@ -22,6 +23,8 @@ import com.atlassian.jira.bc.issue.search.SearchService;
 import com.atlassian.jira.charts.jfreechart.ChartHelper;
 import com.atlassian.jira.issue.Issue;
 import com.atlassian.jira.security.JiraAuthenticationContext;
+import com.atlassian.jira.util.velocity.VelocityRequestContext;
+import com.atlassian.jira.util.velocity.VelocityRequestContextFactory;
 import com.tngtech.jira.plugins.gadget.chart.BarChartGenerator;
 import com.tngtech.jira.plugins.gadget.data.BarChartDataCollector;
 import com.tngtech.jira.plugins.gadget.data.BarChartDataCounter;
@@ -31,6 +34,7 @@ import com.tngtech.jira.plugins.gadget.data.BarChartQueryBuilder;
 import com.tngtech.jira.plugins.gadget.data.BarChartTableGenerator;
 import com.tngtech.jira.plugins.gadget.rest.Chart;
 import com.tngtech.jira.plugins.utils.JiraUtils;
+
 import org.slf4j.LoggerFactory;
 
 @Path("/BarChart")
@@ -42,6 +46,8 @@ public class BarChartGadget {
 
 	private static final int DEFAULT_HEIGHT = 600;
 	private static final int DEFAULT_WIDTH = 650;
+    private final VelocityRequestContextFactory velocityRequestContextFactory;
+
 
 	private final ThreadLocal<BarChartIssueSearcher> issueSearcher = new ThreadLocal<BarChartIssueSearcher>();
 	private final ThreadLocal<BarChartDataCollector> dataCollector = new ThreadLocal<BarChartDataCollector>();
@@ -50,8 +56,9 @@ public class BarChartGadget {
 	private final ThreadLocal<Integer> height = new ThreadLocal<Integer>();
 
 	@VisibleForTesting
-	public BarChartGadget(JiraUtils jiraUtils) {
+	public BarChartGadget(JiraUtils jiraUtils, VelocityRequestContextFactory velocityRequestContextFactory) {
 		this.jiraUtils = jiraUtils;
+		this.velocityRequestContextFactory= velocityRequestContextFactory;
 	}
 
 	@GET
@@ -110,8 +117,9 @@ public class BarChartGadget {
 				groupFieldIdString);
 		String xAxisFieldName = dataCollector.get().getXAxisFieldName();
 		boolean showLegend = !dataCollector.get().getGroupByFieldIsNone();
-
-		String url = generateChart(chartData, xAxisFieldName, showLegend);
+		String imageMap = null;
+		String imageMapName = null;
+		String url = generateChart(chartData, xAxisFieldName, showLegend,imageMap,imageMapName);
 		BarChartTableGenerator tableGenerator = new BarChartTableGenerator(jiraUtils, chartData);
 		List<String> origins = tableGenerator.getFoundGroupValues();
 		List<List<String>> tableData = tableGenerator.extractTableData();
@@ -121,15 +129,17 @@ public class BarChartGadget {
 		String countEntries = Integer.toString(dataCounter.countEntries());
 		String groupFieldName = dataCollector.get().getGroupFieldName();
 
-		return new Chart(url, origins, tableData, projectOrFilterName, countEntries, groupFieldName);
+		return new Chart(url, origins, tableData, projectOrFilterName, countEntries, groupFieldName, imageMap, imageMapName);
 	}
 
-	private String generateChart(List<BarChartEntry> chartData, String xAxisFieldName, boolean legend) {
-		CategoryDataset chartDataset = generateBarChartDataset(chartData);
-		BarChartGenerator onTrackChartGenerator = new BarChartGenerator(chartDataset, jiraUtils);
-		ChartHelper onTrackChartHelper = onTrackChartGenerator.generateChart(xAxisFieldName, legend);
+	private String generateChart(List<BarChartEntry> chartData, String xAxisFieldName, boolean legend, String imageMap,String imageMapName) {
 
-		try {
+		CategoryDataset chartDataset = generateBarChartDataset(chartData);
+		BarChartGenerator onTrackChartGenerator = new BarChartGenerator(chartDataset, jiraUtils,velocityRequestContextFactory);
+		ChartHelper onTrackChartHelper = onTrackChartGenerator.generateChart(xAxisFieldName, legend,imageMap,imageMapName);
+		
+		try {			
+			imageMapName = onTrackChartHelper.getImageMapName();
 			onTrackChartHelper.generate(width.get(), height.get());
 		} catch (IOException e) {
 			Log.error(e.getMessage());

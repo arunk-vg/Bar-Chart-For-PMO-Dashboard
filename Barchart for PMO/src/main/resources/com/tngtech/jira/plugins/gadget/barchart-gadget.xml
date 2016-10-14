@@ -157,10 +157,12 @@
             		    var gadget = this;
                         gadget.projectOrFilterName = args.chart.projectOrFilterName;
             		    gadgets.window.setTitle("__MSG_gadget.barchart.title__ " + args.chart.projectOrFilterName);
-             		    
-             		    var content = "<div align=\"center\"><img src=\"__ATLASSIAN_BASE_URL__/charts?filename=" + args.chart.url + "\"></div><br>"
+             		    console.log(args.chart.url);
+             		    console.log(args.chart.imageMap);
+             		    var content = "<div align=\"center\"><img src=\"__ATLASSIAN_BASE_URL__/charts?filename=" + args.chart.url + "' usemap='#" + args.chart.imageMapName + "\" ></div><br>"
              		    content += "<div align=\"center\">" + args.chart.countIssues + " __MSG_gadget.barchart.view.issues.total__ &nbsp;&nbsp;";
              		    content += "__MSG_gadget.barchart.view.group.by__ &nbsp; <b>" + args.chart.groupBy + "</b><br><br>";
+             		    gadget.getView().append(args.chart.imageMap);
              		    
              		    if (gadget.getPref("showTable") == "show") {
              		    	content += "<div id=\"data\"><table id=\"data-table\" border=\"1\">";

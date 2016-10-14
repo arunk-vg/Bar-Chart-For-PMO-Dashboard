@@ -59,7 +59,7 @@ public class BarChartGadgetTest {
 		JiraUtils jiraUtils = mockJiraUtils(issues);
 		BarChartIssueSearcher barChartIssueSearcher = mockBarChartIssueSearcher(jiraUtils, issues);
 
-		BarChartGadget gadget = new BarChartGadget(jiraUtils);
+		BarChartGadget gadget = new BarChartGadget(jiraUtils, null);
 		Response response = gadget.getVersionsForProject(projectOrFilterIdString, xAxisFieldIdString,
 				groupFieldIdString, widthString, heightString, barChartIssueSearcher);
 
